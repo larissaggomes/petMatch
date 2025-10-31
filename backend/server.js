@@ -8,6 +8,8 @@ const petRoutes = require("./routes/api");
 const app = express()
 app.use(express.json());
 const PORT = 3000;
+const DB_URL = process.env.DATABASE_URL;
+console.log(`URI de Conexão sendo usada: ${DB_URL}`);
 dataBaseConnect();
 
 app.use(express.static(path.join(__dirname, "frontend")));
