@@ -1,16 +1,20 @@
+// controllers/userController.js (ou authController.js)
+
 // 1. Importar o modelo de Usuário
 const User = require('../models/User'); 
 
-// Você precisará desta função para lidar com a criação do usuário
+// 2. Importar a função de geração de Token
+const { generateToken } = require('../utils/authUtils'); // <-- IMPORTADO AQUI!
+
 const registerUser = async (req, res) => {
-    // 2. Extrair dados do corpo da requisição
+    // 3. Extrair dados do corpo da requisição
     const { 
         name, 
         email, 
         password // O campo do frontend deve se chamar 'password'
     } = req.body;
 
-    // 3. Validação básica (opcional, mas recomendado)
+    // 4. Validação básica (opcional, mas recomendado)
     if (!name || !email || !password) {
         return res.status(400).json({ 
             message: "Por favor, preencha todos os campos obrigatórios: nome, email e senha." 
@@ -18,7 +22,7 @@ const registerUser = async (req, res) => {
     }
 
     try {
-        // 4. Verificar se o usuário já existe
+        // 5. Verificar se o usuário já existe
         const existingUser = await User.findOne({ email });
 
         if (existingUser) {
@@ -28,35 +32,35 @@ const registerUser = async (req, res) => {
             });
         }
 
-        // 5. Criar uma nova instância do usuário
-        // OBS: Você deve passar a senha como 'passwordHash' 
-        // para que o hook 'pre("save")' funcione.
+        // 6. Criar uma nova instância do usuário
         const newUser = new User({
             name,
             email,
             // O hook 'pre' em User.js irá criptografar este valor
             passwordHash: password, 
-            // Outros campos opcionais podem ser adicionados aqui:
             phone: req.body.phone,
             location: req.body.location
         });
 
-        // 6. Salvar o novo usuário no banco de dados
-        // O hook 'pre("save")' será executado aqui para criptografar a senha!
+        // 7. Salvar o novo usuário no banco de dados
         const savedUser = await newUser.save();
         
-        // 7. Retornar uma resposta de sucesso
-        // É importante não retornar a 'passwordHash' no JSON de resposta por segurança.
+        // 8. 🔑 GERAR O TOKEN DE AUTENTICAÇÃO
+        // O usuário é automaticamente logado após o registro.
+        const token = generateToken(savedUser._id);
+        
+        // 9. Retornar uma resposta de sucesso (incluindo o token)
         const userResponse = {
             id: savedUser._id,
             name: savedUser.name,
             email: savedUser.email,
             createdAt: savedUser.createdAt,
-            // Você pode adicionar mais campos aqui, exceto a senha
+            // Inclua o token na resposta
+            token: token, // <-- TOKEN ADICIONADO AQUI!
         };
 
         return res.status(201).json({
-            message: "Usuário registrado com sucesso!",
+            message: "Usuário registrado e logado com sucesso!",
             user: userResponse
         });
 
